@@ -7,12 +7,12 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import router from "./routers";
 import connectDB from "./config/database";
-// import errorMiddleware from "./middlewares/error.middleware";
+import errorMiddleware from "./middlewares/error.middlewares";
 
 dotenv.config();
 
 const app: Express = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
 // Middleware
 app.use(
@@ -27,14 +27,16 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded());
 
-// // Error handling middleware
-// app.use(errorMiddleware);
 
 // Database Connection
 connectDB();
 
 // Routes
-app.use("/api", router);
+app.use("/v1/api", router);
+
+// // Error handling middleware
+app.use(errorMiddleware);
+
 
 app.listen(port, () => {
   console.log(
