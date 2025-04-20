@@ -6,6 +6,7 @@ import {
 import { HTTP_STATUS_CODE } from "~/contants/enum";
 import { AuthService } from "~/services/auth.service";
 import { APIError } from "~/utils/error";
+import { JWT } from "~/utils/jwt";
 
 export const AuthController = {
   register: async (
@@ -21,7 +22,7 @@ export const AuthController = {
         throw new APIError(
           "BAD_REQUEST",
           HTTP_STATUS_CODE.BAD_REQUEST,
-          "Email and password are required"
+          "Email, password and full name are required"
         );
       }
 
@@ -45,5 +46,49 @@ export const AuthController = {
     req: Request,
     res: Response,
     next: NextFunction
-  ) => {},
+  ) => {
+    const { email, password } = req.body;
+    try {
+      if (!email || !password) {
+        throw new APIError(
+          "BAD_REQUEST",
+          HTTP_STATUS_CODE.BAD_REQUEST,
+          "Email and password are required"
+        );
+      }
+
+      const user = await AuthService.login(
+        email,
+        password
+      );
+
+      const accessToken = JWT.generate(
+        { id: user.id },
+        process.env.EXISTS_ACCESS_TOKEN
+      );
+
+      const refeshToken = JWT.generate(
+        { id: user.id },
+        process.env.EXISTS_REFRESH_TOKEN
+      );
+
+      res.cookie("refeshToken", refeshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+      });
+
+      res.status(HTTP_STATUS_CODE.OK).json({
+        message: "Login successfully",
+        data: {
+          accessToken: accessToken,
+          user,
+        },
+      });
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  },
 };

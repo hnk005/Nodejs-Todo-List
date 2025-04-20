@@ -1,6 +1,9 @@
 import { HTTP_STATUS_CODE } from "~/contants/enum";
-import User from "~/models/database/User";
+import User, {
+  IUser,
+} from "~/models/database/User";
 import { APIError } from "~/utils/error";
+import bcrypt from "bcryptjs";
 
 export const AuthService = {
   register: async (
@@ -8,11 +11,11 @@ export const AuthService = {
     email: string,
     password: string
   ) => {
-    const userExist = await User.findOne({
+    const userExists = await User.findOne({
       email,
     });
 
-    if (userExist) {
+    if (userExists) {
       throw new APIError(
         "CONFLICT",
         HTTP_STATUS_CODE.CONFLICT,
@@ -27,7 +30,35 @@ export const AuthService = {
     });
 
     await user.save();
+  },
+  login: async (
+    email: string,
+    password: string
+  ) => {
+    const userExists = await User.findOne({
+      email,
+    });
+    if (!userExists) {
+      throw new APIError(
+        "BAD_REQUEST",
+        HTTP_STATUS_CODE.BAD_REQUEST,
+        "Email not exists"
+      );
+    }
 
-    return user;
+    const comparePassword = await bcrypt.compare(
+      password,
+      userExists.password
+    );
+
+    if (!comparePassword) {
+      throw new APIError(
+        "BAD_REQUEST",
+        HTTP_STATUS_CODE.BAD_REQUEST,
+        "Incorrect password"
+      );
+    }
+
+    return userExists;
   },
 };
